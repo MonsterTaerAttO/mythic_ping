@@ -7,7 +7,7 @@ RegisterCommand('ping', function(source, args, rawCommand)
         else
             local tSrc = tonumber(args[1])
             if source ~= tSrc then
-                TriggerClientEvent('mythic_ping:client:SendPing', tSrc, GetPlayerName(tSrc), source)
+                TriggerClientEvent('mythic_ping:client:SendPing', tSrc, GetPlayerName(source), source)
             else
                 TriggerClientEvent('mythic_notify:client:SendAlert', source, { type = 'inform', text = 'Can\'t Ping Yourself' })
             end
