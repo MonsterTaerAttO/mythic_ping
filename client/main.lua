@@ -10,7 +10,6 @@ function AddBlip(bData)
     BeginTextCommandSetBlipName("STRING")
     AddTextComponentString(bData.name)
     EndTextCommandSetBlipName(pendingPing.blip)
-    SetBlipFlashes(pendingPing.blip, true)
 
     pendingPing.count = 0
 end
