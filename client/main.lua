@@ -15,6 +15,22 @@ function AddBlip(bData)
     pendingPing.count = 0
 end
 
+function TimeoutPingRequest()
+    Citizen.CreateThread(function()
+        local count = 0
+        while isPending do
+            count = count + 1
+            if count >= Config.Timeout and isPending then
+                exports['mythic_notify']:DoHudText('inform', 'Ping From ' .. pendingPing.name .. ' Timed Out')
+                TriggerServerEvent('mythic_ping:server:SendPingResult', pendingPing.id, 'timeout')
+                pendingPing = nil
+                isPending = false
+            end
+            Citizen.Wait(1000)
+        end
+    end)
+end
+
 function TimeoutBlip()
     Citizen.CreateThread(function()
         while pendingPing ~= nil do
@@ -31,30 +47,39 @@ function TimeoutBlip()
     end)
 end
 
+function RemoveBlipDistance()
+    local player = PlayerPedId()
+    Citizen.CreateThread(function()
+        while pendingPing ~= nil do
+            local plyCoords = GetEntityCoords(player)
+            local dist = math.floor(#(vector2(pendingPing.pos.x, pendingPing.pos.y) - vector2(plyCoords.x, plyCoords.y)))
+
+            if dist < Config.DeleteDistance then
+                RemoveBlip(pendingPing.blip)
+                pendingPing = nil
+            else
+                Citizen.Wait(math.floor((dist - Config.DeleteDistance) * 30))
+            end
+        end
+    end)
+end
+
 RegisterNetEvent('mythic_ping:client:SendPing')
 AddEventHandler('mythic_ping:client:SendPing', function(sender, senderId)
     if pendingPing == nil then
         pendingPing = {}
         pendingPing.id = senderId
         pendingPing.name = sender
+        pendingPing.pos = GetEntityCoords(GetPlayerPed(GetPlayerFromServerId(pendingPing.id)), false) 
 
         TriggerServerEvent('mythic_ping:server:SendPingResult', pendingPing.id, 'received')
         exports['mythic_notify']:DoCustomHudText('inform', pendingPing.name .. ' Sent You a Ping, Use /ping accept To Accept', (Config.Timeout * 1000))
+        isPending = true
 
-        Citizen.CreateThread(function()
-            isPending = true
-            local count = 0
-            while isPending do
-                count = count + 1
-                if count >= Config.Timeout and isPending then
-                    exports['mythic_notify']:DoHudText('inform', 'Ping From ' .. pendingPing.name .. ' Timed Out')
-                    TriggerServerEvent('mythic_ping:server:SendPingResult', pendingPing.id, 'timeout')
-                    pendingPing = nil
-                    isPending = false
-                end
-                Citizen.Wait(1000)
-            end
-        end)
+        if Config.Timeout > 0 then
+            TimeoutPingRequest()
+        end
+
     else
         exports['mythic_notify']:DoHudText('inform', sender .. ' Attempted To Ping You')
         TriggerServerEvent('mythic_ping:server:SendPingResult', senderId, 'unable')
@@ -64,10 +89,21 @@ end)
 RegisterNetEvent('mythic_ping:client:AcceptPing')
 AddEventHandler('mythic_ping:client:AcceptPing', function()
     if isPending then
-        local pos = GetEntityCoords(GetPlayerPed(GetPlayerFromServerId(pendingPing.id)), false)
-        local playerBlip = { name = pendingPing.name, color = Config.BlipColor, id = Config.BlipIcon, scale = Config.BlipScale, x = pos.x, y = pos.y, z = pos.z }
+        local playerBlip = { name = pendingPing.name, color = Config.BlipColor, id = Config.BlipIcon, scale = Config.BlipScale, x = pendingPing.pos.x, y = pendingPing.pos.y, z = pendingPing.pos.z }
         AddBlip(playerBlip)
-        TimeoutBlip()
+
+        if Config.RouteToPing then
+            SetNewWaypoint(pendingPing.pos.x, pendingPing.pos.y)
+        end
+
+        if Config.Timeout > 0 then
+            TimeoutBlip()
+        end
+
+        if Config.DeleteDistance > 0 then
+            RemoveBlipDistance()
+        end
+
         exports['mythic_notify']:DoHudText('inform', pendingPing.name .. '\'s Location Showing On Map')
         TriggerServerEvent('mythic_ping:server:SendPingResult', pendingPing.id, 'accept')
         isPending = false
