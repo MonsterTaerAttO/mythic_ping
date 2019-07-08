@@ -4,13 +4,17 @@ RegisterCommand('ping', function(source, args, rawCommand)
             TriggerClientEvent('mythic_ping:client:AcceptPing', source)
         elseif args[1]:lower() == 'reject' then
             TriggerClientEvent('mythic_ping:client:RejectPing', source)
+        elseif args[1]:lower() == 'remove' then
+            TriggerClientEvent('mythic_ping:client:RemovePing', source)
         else
             local tSrc = tonumber(args[1])
-            if source ~= tSrc then
-                TriggerClientEvent('mythic_ping:client:SendPing', tSrc, GetPlayerName(source), source)
-            else
-                TriggerClientEvent('mythic_notify:client:SendAlert', source, { type = 'inform', text = 'Can\'t Ping Yourself' })
-            end
+			if tSrc ~= nil then
+				if source ~= tSrc then
+					TriggerClientEvent('mythic_ping:client:SendPing', tSrc, GetPlayerName(source), source)
+				else
+					TriggerClientEvent('mythic_notify:client:SendAlert', source, { type = 'inform', text = 'Can\'t Ping Yourself' })
+				end
+			end
         end
     end
 end, false)
