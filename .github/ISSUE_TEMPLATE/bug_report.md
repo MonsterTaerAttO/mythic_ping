@@ -23,10 +23,7 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Code Snippet:**
-Snippet of Code You're Attempting To Use
-
-**FiveM Server Info:**
+**FiveM Artifacts Version:**
 Artifacts Version Your Server Is Running
 
 **Additional context**
